@@ -1,5 +1,5 @@
-SOURCES = hamt.ml
+SOURCES = hamt.ml helper.ml go.ml
 PACKS = unix
-RESULT = hamt
+RESULT = go
 OCAMLMAKEFILE = ~/.opam/default/lib/ocaml-makefile/OCamlMakefile
 include $(OCAMLMAKEFILE)

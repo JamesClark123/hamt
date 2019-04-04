@@ -5,7 +5,7 @@
 
 *)
 open Hashtbl
-open Printf
+open Random
 
 
 type ('a, 'b) hashMapEntry = { hash : int
@@ -27,17 +27,15 @@ and ('a, 'b) hamt = ArrayNode of ('a, 'b) arrayNode
                   | Empty
 
 
-type ('a, 'b) printT = SomeHAMT of ('a, 'b) hamt
-                     | NoHAMT of int
-
-
-let arrayLen = 4
+let arrayLen = 16
 
 let shiftvalue_float = (log (float_of_int arrayLen)) /. (log 2.0)
 
 let shiftvalue = int_of_float shiftvalue_float
 
-let maskvalue = (shiftvalue -1) lor shiftvalue
+let rec makeMaskValue i = if i = 0 then 1 else (1 lsl (i-1)) lor (makeMaskValue (i - 1))
+
+let maskvalue = makeMaskValue shiftvalue
 
 let getIndex hash shift = (hash asr shift) land maskvalue
 
@@ -90,26 +88,26 @@ let remove (hamt : ('a, 'b) hamt) (key : 'a) =
 
 let add (hamt : ('a, 'b) hamt) (key : 'a) (value : 'b) =
 
-  let hash = Hashtbl.hash key in
+  let hsh = Hashtbl.hash key in
 
   let rec loop hamt shift =
     match hamt with
     | ArrayNode {arr; shift} ->
-      let index = getIndex hash shift in
+      let index = getIndex hsh shift in
       let newInsertValue = loop (Array.get arr index) (shift + shiftvalue) in
       let newArr = Array.copy arr in
       let () = Array.set newArr index newInsertValue
       in
       ArrayNode {arr = newArr; shift = shift}
 
-    | Entry {hash=h; key=k; value=v} when h = hash ->
+    | Entry {hash=h; key=k; value=v} when h = hsh ->
       let newHashMapEntry = (key, value)in
       let thisEntry = (k, v) in
       let hMEList = thisEntry :: newHashMapEntry :: []
       in
-      CollisionNode {ahash = hash; hmes = hMEList}
+      CollisionNode {ahash = hsh; hmes = hMEList}
 
-    | CollisionNode {ahash=h; hmes} when h = hash ->
+    | CollisionNode {ahash=h; hmes} when h = hsh ->
       let newHMES =(key, value) :: hmes
       in
       CollisionNode {ahash=h; hmes=newHMES}
@@ -118,22 +116,22 @@ let add (hamt : ('a, 'b) hamt) (key : 'a) (value : 'b) =
     (* Note that this also means that any following Entry or CollisionNode occurences are guarenteed to not be a true collision *)
 
     | Entry {hash=h; key=k; value=v} as thisEntry ->
-      let newShift = shift + shiftvalue in
-      let thisIndex = getIndex h newShift in
+      (* let newShift = shift + shiftvalue in *)
+      let thisIndex = getIndex h shift in
       let newArr = Array.init arrayLen (fun x -> Empty) in
       let () = Array.set newArr thisIndex thisEntry
       in
-      loop (ArrayNode {arr=newArr; shift=newShift}) newShift (* this is a poor way to do this as it results in at least two copies of the new array but I will leave it for now *)
+      loop (ArrayNode {arr=newArr; shift=shift}) shift (* this is a poor way to do this as it results in at least two copies of the new array but I will leave it for now *)
 
     | CollisionNode {ahash=h; hmes} as thisCollisionNode ->
-      let newShift = shift + shiftvalue in
-      let thisIndex = getIndex h newShift in
+      (* let newShift = shift + shiftvalue in *)
+      let thisIndex = getIndex h shift in
       let newArr = Array.init arrayLen (fun x -> Empty) in
       let () = Array.set newArr thisIndex thisCollisionNode
       in
-      loop (ArrayNode {arr=newArr; shift=newShift}) newShift
+      loop (ArrayNode {arr=newArr; shift=shift}) shift
 
-    | Empty -> Entry {hash=hash;key=key;value=value}
+    | Empty -> Entry {hash=hsh;key=key;value=value}
   in
 
   loop hamt 0
@@ -156,54 +154,6 @@ let initq i =
   let rec loop i hamt =
     match i with
     | 0 -> hamt
-    | _ -> loop (i-1) (add hamt i i)
+    | _ -> loop (i-1) (add hamt (Printf.sprintf "%d" (i * Random.int 1000000)) i)
   in
   loop i base
-
-let rec print hamt =
-  let isAllEmpty l = List.fold_right (fun x y -> match x with | NoHAMT i -> 0 + y | _ -> 1 + y) l 0 in
-  let p (hamt : ('a, 'b) hamt) =
-    match hamt with
-    | ArrayNode _ -> Printf.printf "N "
-    | Entry {hash; key; value} -> Printf.printf "%d " value
-    | CollisionNode _ -> Printf.printf "C "
-    | Empty -> Printf.printf "E "
-  in
-  let rec printBlanks i =
-    Printf.printf "|"
-    (* match i with
-       | 0 -> Printf.printf "|"
-       | i -> Printf.printf "|"; printBlanks (i-1) *)
-  in
-  let rec printLevel hamt_list =
-    match hamt_list with
-    | [] -> []
-    | SomeHAMT ArrayNode {arr; shift} :: rest -> Array.iter (fun x -> p x) arr
-                                               ; Printf.printf "  "
-                                               ; Array.fold_right (fun x l -> SomeHAMT x :: l) arr (printLevel rest)
-    | SomeHAMT Entry {hash; key; value} :: rest -> (*p (List.hd hamt_list)
-                                                     ;*) NoHAMT 4 :: (printLevel rest)
-    | SomeHAMT CollisionNode {ahash; hmes} :: rest -> List.iter (fun (key, value) -> Printf.printf "%d " value) hmes
-                                                    ; NoHAMT 4 :: (printLevel rest)
-    | SomeHAMT Empty :: rest -> printBlanks 4; NoHAMT 4 :: printLevel(rest)
-    | NoHAMT i :: rest -> printBlanks i; NoHAMT (i * 4) :: printLevel(rest)
-  in
-  let rec loop pt =
-    let newHamt = printLevel pt in
-    match (isAllEmpty newHamt) = 0 with
-    | true -> Printf.printf "\ndone\n"
-    | false -> Printf.printf "\n"; loop newHamt
-  in
-  loop [SomeHAMT hamt]
-
-let go () =
-  let testHamt = init [(1,1); (2,2); (3,3); (4,4); (5,5); (6,6); (7,7); (8,8); (9,9); (10,10); (11,11); (12,12); (13,13); (14,14)] in
-  let aVal = find testHamt 13 in
-  let newHamt = remove testHamt 13 in
-  let testHamt2 = initq 50 in
-  print testHamt;
-  Printf.printf "%d\n" aVal;
-  print newHamt;
-  print testHamt2
-
-let s = go ()
