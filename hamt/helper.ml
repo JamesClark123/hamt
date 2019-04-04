@@ -94,10 +94,32 @@ let makeString hamt =
   let edges = getEdges oT in
   nodes^"."^edges
 
-let export hamt =
+let export ?name:(name="temp") hamt =
   let file = "print.txt" in
   let str = makeString hamt in
   let oc = open_out file in
   Printf.fprintf oc "%s" str;
   close_out oc;
-  Sys.command "Python print.py"
+  let code = Sys.command ("Python print.py" ^ " " ^ name) in
+  match code with
+  | 0 -> ()
+  | _ -> Printf.printf "error when printing\n"
+
+let modify hamt i j =
+  let hash = Hashtbl.hash i in
+  let isin (ArrayNode {arr; shift}) =
+    let cur = Array.get arr (getIndex hash shift) in
+    match cur with
+    | Entry _ -> true
+    | _ -> false
+  in
+  let rec loop hamt =
+    match hamt with
+    | ArrayNode {arr; shift} ->
+      let index = getIndex hash shift in
+      if isin hamt then Array.set arr index (Entry{hash=hash; key=i; value=j}) else loop (Array.get arr index)
+    | Entry {hash; key; value} -> ()
+    | CollisionNode _ -> ()
+    | Empty -> ()
+  in
+  loop hamt

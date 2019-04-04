@@ -11,10 +11,24 @@ let options =
       | _ -> false
     end
 
-let go () =
-  let testHamt2 = initq 40 in
+let testSharedStructure () =
+  let testHamt2 = initq 20 in
+  let testHamt3 = add testHamt2 "lasdkjfeoi" 100 in
+  modify testHamt3 "7" 0;
+  modify testHamt3 "lasdkjfeoi" (-1);
+  Printf.printf "done\n";
   match options with
-  | false -> export testHamt2
-  | true -> 1
+  | false -> export ~name:"hamt2" testHamt2; export ~name:"hamt3" testHamt3
+  | true -> ()
+
+let go () =
+  (* testSharedStructure () *)
+  match options with
+  | false ->
+    let hamt = initq 300 in
+    export ~name:"hamt" hamt
+  | true -> ()
+
+
 
 let s = go ()
