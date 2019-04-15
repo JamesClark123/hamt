@@ -1,5 +1,11 @@
 open Hamt
 open Helper
+open Test
+
+
+
+(* #require "core.top";;
+   #require "core.syntax";; *)
 
 let options =
   match (Array.length Sys.argv) > 1 with
@@ -23,11 +29,15 @@ let testSharedStructure () =
 
 let go () =
   (* testSharedStructure () *)
-  match options with
-  | false ->
-    let hamt = initq 300 in
-    export ~name:"hamt" hamt
-  | true -> ()
+  (* match options with
+     | false ->
+     let hamt = initq 300 in
+     export ~name:"hamt" hamt
+     | true -> () *)
+
+  tests()
+
+
 
 
 

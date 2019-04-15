@@ -39,8 +39,7 @@ let maskvalue = makeMaskValue shiftvalue
 
 let getIndex hash shift = (hash asr shift) land maskvalue
 
-let find (hamt : ('a, 'b) hamt) (key : 'a) =
-
+let find_opt (hamt : ('a, 'b) hamt) (key : 'a) =
   let hash = Hashtbl.hash key in
 
   let rec loop hamt =
@@ -48,7 +47,7 @@ let find (hamt : ('a, 'b) hamt) (key : 'a) =
     | ArrayNode {arr; shift} ->
       let index = getIndex hash shift in
       loop (Array.get arr index)
-    | Entry {hash=h; key; value} when hash = h -> Some {hash;key;value}
+    | Entry {hash; key=k; value} when k = key -> Some {hash;key;value}
     | CollisionNode {ahash; hmes} when ahash = hash ->
       let v = List.find_opt (fun (k, value) -> if k = key then true else false) hmes in
       begin
@@ -58,8 +57,13 @@ let find (hamt : ('a, 'b) hamt) (key : 'a) =
       end
     | _ -> None
   in
+  loop hamt
 
-  match loop hamt with
+let find (hamt : ('a, 'b) hamt) (key : 'a) =
+  let o = find_opt hamt key
+  in
+
+  match o with
   | Some {hash;key;value} -> value
   | None -> raise Not_found
 
@@ -78,7 +82,7 @@ let remove (hamt : ('a, 'b) hamt) (key : 'a) =
       Empty
     | CollisionNode {ahash; hmes} when ahash = hash ->
       let newList = List.remove_assoc key hmes in
-      CollisionNode {ahash; hmes = newList}
+      if newList = [] then Empty else CollisionNode {ahash; hmes = newList}
     | _ -> raise Not_found
   in
   let v = try Some (find hamt key) with Not_found -> None in
@@ -100,12 +104,13 @@ let add (hamt : ('a, 'b) hamt) (key : 'a) (value : 'b) =
       in
       ArrayNode {arr = newArr; shift = shift}
 
-    | Entry {hash=h; key=k; value=v} when h = hsh ->
-      let newHashMapEntry = (key, value)in
-      let thisEntry = (k, v) in
-      let hMEList = thisEntry :: newHashMapEntry :: []
-      in
-      CollisionNode {ahash = hsh; hmes = hMEList}
+    | Entry {hash=h; key=k; value=v} as e when h = hsh ->
+      if k = key then e else (* Currently handling duplicate keys by ignoring them, this should raise an exception *)
+        let newHashMapEntry = (key, value)in
+        let thisEntry = (k, v) in
+        let hMEList = thisEntry :: newHashMapEntry :: []
+        in
+        CollisionNode {ahash = hsh; hmes = hMEList}
 
     | CollisionNode {ahash=h; hmes} when h = hsh ->
       let newHMES =(key, value) :: hmes
@@ -155,5 +160,15 @@ let initq i =
     match i with
     | 0 -> hamt
     | _ -> loop (i-1) (add hamt (Printf.sprintf "%d" (i * Random.int 1000000)) i)
+  in
+  loop i base
+
+let initi i =
+  let arr = Array.init arrayLen (fun x -> Empty) in
+  let base = ArrayNode {arr = arr; shift = 0} in
+  let rec loop i hamt =
+    match i with
+    | 0 -> hamt
+    | _ -> loop (i-1) (add hamt (i * Random.int 1000000) i)
   in
   loop i base
