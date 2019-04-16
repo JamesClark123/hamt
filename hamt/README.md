@@ -1,6 +1,6 @@
-A basic implementation of the HAMT data structure. To allow pretty printing of the data structure graphviz must be installed along with python.
+A basic implementation of the HAMT data structure. This code focuses on performance testing of the HAMT structure using Core_bench from Jane Street, so this module is required. To allow pretty printing of the data structure graphviz must be installed along with python.
 
-Compile and run with:
+Compile and run performance tests with:
 
 ```
 > make
@@ -8,10 +8,11 @@ Compile and run with:
 > ./go
 ```
 
-To compile and run with out graphviz and python:
+To compile and run the pretty printer:
 
 ```
 > make
 
-> ./go -b
+> ./go -p [size]
 ```
+Where [size] is the number of elements in the structure you want to see.

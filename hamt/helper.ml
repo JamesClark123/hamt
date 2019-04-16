@@ -1,7 +1,7 @@
 (* file: hamt.ml
    author: James Clark
 
-   This file contains a simple implementation of the HAMT data structure
+   This file contains helper functions not part of the HAMT structure, including a export function to print a hamt structure via the included python file.
 
 *)
 open Printf
@@ -69,7 +69,7 @@ let makeString hamt =
   in
   let rec transform hamt =
     match hamt with
-    | ArrayNode {arr; shift} ->
+    | Hamt.ArrayNode {arr; shift} ->
       let i = getNewIndex () in
       let l = Array.fold_right (fun hamt rest -> (transform hamt) :: rest) arr [] in
       Edge (i, l)
@@ -107,16 +107,16 @@ let export ?name:(name="temp") hamt =
 
 let modify hamt i j =
   let hash = Hashtbl.hash i in
-  let isin (ArrayNode {arr; shift}) =
-    let cur = Array.get arr (getIndex hash shift) in
+  let isin (Hamt.ArrayNode {arr; shift}) =
+    let cur = Array.get arr (Hamt.getIndex hash shift) in
     match cur with
-    | Entry _ -> true
+    | Hamt.Entry _ -> true
     | _ -> false
   in
   let rec loop hamt =
     match hamt with
-    | ArrayNode {arr; shift} ->
-      let index = getIndex hash shift in
+    | Hamt.ArrayNode {arr; shift} ->
+      let index = Hamt.getIndex hash shift in
       if isin hamt then Array.set arr index (Entry{hash=hash; key=i; value=j}) else loop (Array.get arr index)
     | Entry {hash; key; value} -> ()
     | CollisionNode _ -> ()

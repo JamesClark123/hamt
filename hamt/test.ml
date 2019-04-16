@@ -1,16 +1,23 @@
+(* file: hamt.ml
+   author: James Clark
+
+   This file contains comparision tests to measure hamt performance versus other Core structures such as Map and Hashtbl using Core_bench
+
+*)
+
 open Core
 open Core_bench
 open Random
+open Hamt
 
 module M = Core.Map.Make(Int)
 module H = Hashtbl.Make(Int)
 
-let tests () =
-  let trialsizes = [10;100;500;1000;5000;10000] in
+let tests ?trialsizes:(trialsizes=[10;100;500;1000;5000;10000]) () =
   let ranrange = 1000000000 in
 
   (* Find Tests *)
-  Command.run (Bench.make_command [
+  Command.run (Bench.make_command[
       Bench.Test.create_indexed
         ~name:"Map Find"
         ~args:trialsizes
@@ -31,7 +38,7 @@ let tests () =
            let keysArray = Array.of_list keys in
            let values = List.init len (fun x -> x * Random.int ranrange) in
            let pairs = match List.zip keys values with | Some p -> p | None -> failwith "error" in
-           let hamt = Hamt.init pairs in
+           let hamt = Hamt.of_alist pairs in
            let key () = Array.get keysArray (Random.int len) in
            Staged.stage (fun () -> ignore (Hamt.find hamt (key()) )));
       Bench.Test.create_indexed
@@ -65,7 +72,7 @@ let tests () =
            let keys = List.init len (fun x -> x * Random.int ranrange) in
            let values = List.init len (fun x -> x * Random.int ranrange) in
            let pairs = match List.zip keys values with | Some p -> p | None -> failwith "error" in
-           let hamt = Hamt.init pairs in
+           let hamt = Hamt.of_alist pairs in
            Staged.stage (fun () -> ignore (Hamt.add hamt (Random.int ranrange) (-1) )));
       Bench.Test.create_indexed
         ~name:"Hashtbl Insert"
@@ -82,7 +89,7 @@ let tests () =
   Command.run (Bench.make_command [
       Bench.Test.create_indexed
         ~name:"Map Make"
-        ~args:[10;100;500;1000;5000;10000]
+        ~args:trialsizes
         (fun len ->
            let keys = List.init len (fun x -> x * Random.int ranrange) in
            let values = List.init len (fun x -> x * Random.int ranrange) in
@@ -90,15 +97,15 @@ let tests () =
            Staged.stage (fun () -> ignore (Int.Map.of_alist_exn pairs)));
       Bench.Test.create_indexed
         ~name:"Hamt Make"
-        ~args:[10;100;500;1000;5000;10000]
+        ~args:trialsizes
         (fun len ->
            let keys = List.init len (fun x -> x * Random.int ranrange) in
            let values = List.init len (fun x -> x * Random.int ranrange) in
            let pairs = match List.zip keys values with | Some p -> p | None -> failwith "error" in
-           Staged.stage (fun () -> ignore (Hamt.init pairs)));
+           Staged.stage (fun () -> ignore (Hamt.of_alist pairs)));
       Bench.Test.create_indexed
         ~name:"Hashtbl Make"
-        ~args:[10;100;500;1000;5000;10000]
+        ~args:trialsizes
         (fun len ->
            let keys = List.init len (fun x -> x * Random.int ranrange) in
            let values = List.init len (fun x -> x * Random.int ranrange) in

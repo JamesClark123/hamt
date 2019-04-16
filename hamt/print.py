@@ -2,7 +2,7 @@ import os
 import sys
 from graphviz import Digraph, nohtml
 
-os.chdir("/Users/jamesclark/HAMT and Persistent Vectors/hamt/hamt")
+os.chdir(os.getcwd())
 
 file = open("print.txt","r")
 
