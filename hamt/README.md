@@ -16,3 +16,9 @@ To compile and run the pretty printer:
 > ./go -p [size]
 ```
 Where [size] is the number of elements in the structure you want to see.
+
+
+
+So far performance results from Core_bench show:
+Inline-style:
+![alt text](https://github.com/JamesClark123/hamt/blob/master/imgs/Percent%20Relative%20Performance%20for%20Find.png "Find Performance")
