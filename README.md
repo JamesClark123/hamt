@@ -20,7 +20,11 @@ Where [size] is the number of elements in the structure you want to see.
 
 
 Although I still wish to put more work into testing and making sure the tests are correct, the current performance results from Core_bench show:
+
+
 ---
+
+
 ![alt text](https://github.com/JamesClark123/hamt/blob/master/imgs/Percent%20Relative%20Performance%20for%20Find.png "Find Performance")
 ![alt text](https://github.com/JamesClark123/hamt/blob/master/imgs/Percent%20Relative%20Performance%20for%20Insert.png "Insert Performance")
 ![alt text](https://github.com/JamesClark123/hamt/blob/master/imgs/Percent%20Relative%20Performance%20for%20Make.png "Make Performance")
