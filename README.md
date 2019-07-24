@@ -1,4 +1,10 @@
-A basic implementation of the HAMT data structure. This code focuses on performance testing of the HAMT structure using Core_bench from Jane Street, so this module is required. To allow pretty printing of the data structure graphviz must be installed along with python.
+This project is a persistent implementation of the HAMT data structure, currently without sparse arrays. The rest of this readme contains a description of the HAMT structure along with some performace testing of my code.
+
+For a more detailed description of HAMT, I recommend [Ideal Hash Trees](https://infoscience.epfl.ch/record/64398/files/idealhashtrees.pdf) by Phil Bagwell.
+
+
+
+ This code focuses on performance testing of the HAMT structure using Core_bench from Jane Street, so this module is required. To allow pretty printing of the data structure graphviz must be installed along with python.
 
 Compile and run performance tests with:
 
