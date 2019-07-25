@@ -1,6 +1,6 @@
-This project is a persistent implementation of the HAMT data structure, currently without sparse arrays or table resizing, that I completed for an independent study at Boston College. The rest of this readme contains a description of the HAMT structure along with some performace testing of my code.
+This project is a persistent, functional implementation of the HAMT data structure, currently without sparse arrays or table resizing, that I completed for an independent study at Boston College. The rest of this readme contains a description of the HAMT structure along with some performace testing of my code.
 
-For a more detailed description of HAMT, I recommend [Ideal Hash Trees](https://infoscience.epfl.ch/record/64398/files/idealhashtrees.pdf) by Phil Bagwell.
+For a more detailed description of HAMT I recommend [Ideal Hash Trees](https://infoscience.epfl.ch/record/64398/files/idealhashtrees.pdf) by Phil Bagwell. The information and technical details of this readme are drawn from that paper. Zach Allaun also has a great talk on [Functional Maps](https://www.infoq.com/presentations/julia-vectors-maps-sets/) on which this project is largely based.
 
 # What is HAMT?
 
@@ -17,41 +17,25 @@ An example of this process with insert is below in Fig 2. Here the objective is 
 
 ![Sample Insert](/imgs/Insert_Sample.png "Fig 2")
 
-## Persistency
-To make this structure persistent
+## Functional and Persistent Implementations
+To make this structure persistent it's simply a matter of copying all trie nodes on the path to an insert bucket, and returning the modified structure. Notably, this does not involve copying the whole structure, simply the nodes that have been changed. In Fig 3 below the example from insert in Fig 2 is continued to show this notion. If the original HAMT structure is initiated to a variable called x1 after inserting g we get a new structure back, x2. However the only new subtries in x2 are those that were modified to add g to the hash tree. All subties not touched by the insert path remain as buckets for *both* x1 and x2. This means for insert it's only necessary to make and copy an average of log(N) arrays which, for a functional structure, is pretty good.
 
-## My Code
+![Sample Functional](/imgs/Functional_Sample.png "Fig 3")
 
-# Non Persistent Improvements - Getting O(1)
+# My Code
+It is the structure described above that my code implements. That is to say, I've implemented a functional, persistent structure that has average access time of O(logN) for all operations and only copies O(logN) structures on insert and remove.
 
-# Working with the Code
- This code focuses on performance testing of the HAMT structure using Core_bench from Jane Street, so this module is required. To allow pretty printing of the data structure graphviz must be installed along with python.
+Below, I talk about further improvements on non functional versions of HAMT that further save space and lower the number of accesses.
 
-Compile and run performance tests with:
+# Space Improvements and Getting O(1)
 
-```
-> make
+## Sparse Arrays
+The first improvement that should be mentioned, and one that is applicable to a functional version of HAMT as well, is the use of sparse arrays. This simply means that the tables used in the subtries are only of the size needed, where a integer bitmap is used to indicate which buckets in the table have been taken. For example, if there is a subtrie that has 32 possible buckets but only two elements currently then the array of said subtrie will be an array of length two. To properly index into that array it's necessary to use a count population instruction on the bits of the bitmap. For a better description of using sparse arrays I recommend watching the talk by Zach Allaun mentioned at the beginning of the readme.
 
-> ./go
-```
+## Reusing Subtrie Arrays
+These next two improvements are certainly not functional but should still be mentioned. I will also only cover them vaguley since they are not implemented here and instead direct readers to Ideal Hash Trees by Phil Bagwell for a more in depth descriptoin.
 
-To compile and run the pretty printer:
+This improvement addresses the potential to waste space when inserting (or removing) elements from sparse arrays. When inserting with sparse arrays it becomes necessary to retrieve a new array that is one bucket bigger. Instead of simply returning the old array to the system it is more effecient to store the now unused array in a memory pool and use it prior to requesting more system memory for arrays of that particular size.
 
-```
-> make
-
-> ./go -p [size]
-```
-Where [size] is the number of elements in the structure you want to see.
-
-
-
-Although I still wish to put more work into testing and making sure the tests are correct, the current performance results from Core_bench show:
-
-
----
-
-
-![alt text](https://github.com/JamesClark123/hamt/blob/master/imgs/Percent%20Relative%20Performance%20for%20Find.png "Find Performance")
-![alt text](https://github.com/JamesClark123/hamt/blob/master/imgs/Percent%20Relative%20Performance%20for%20Insert.png "Insert Performance")
-![alt text](https://github.com/JamesClark123/hamt/blob/master/imgs/Percent%20Relative%20Performance%20for%20Make.png "Make Performance")
+## Re-Sizing the Root Hash Table
+The impetus for resizing is the same as for Hash Tables, it improves average access time when the load factor becomes high. When resizing it is necessary to migrate elements from old subtries to the new root hash table. This can be done lazily and the major benefit is that average search and insert costs become O(1).
